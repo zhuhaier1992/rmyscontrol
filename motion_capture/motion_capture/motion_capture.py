@@ -156,8 +156,8 @@ class MotionCapture(Node):
                                 z=(self.pdq[1][i].theta-self.pdq[0][i].theta)/dt
                                 self.v.append(Pose2D(x=x/1000, y=y/1000, theta=z))
                         except Exception as e:
-                            # self.get_logger().error(e)
-                            self.get_logger().info(f'pdq: {len(self.pdq)}')
+                            # self.get_logger().info(e)
+                            self.get_logger().info(f'pdq[1]: {len(self.pdq[1])}')
 
                 
 
