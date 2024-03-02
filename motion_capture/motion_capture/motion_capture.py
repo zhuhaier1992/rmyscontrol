@@ -19,7 +19,7 @@ from rmcontrol.utils import get_ori
 preFrmNo=0
 curFrmNo = 0
 pi=3.14159265
-no_robots=12
+no_robots=6
 
 def get_norm(x,y):
     return sqrt(x**2+y**2)

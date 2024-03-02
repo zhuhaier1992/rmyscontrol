@@ -10,7 +10,7 @@ In workspace, run ```colcon build```.
 ### Usage
 Start XINGYING (Nokov mocap software), check 'SDK' in setting and start running.
 
-Connect server to the switch of mocap by ethernet cable.
+If XINGYING starts on another PC, then connect server to the switch of mocap by ethernet cable.(Important note: must be connected AFTER XINGYING is started.)
 
 Run following command on server.
 ```
