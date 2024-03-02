@@ -4,14 +4,14 @@ import sys, getopt
 
 import rclpy
 from rclpy.node import Node
-from ros2_interfaces.msg import Motions
+from ros2_interfaces.msg import Motions, Mocap
 from geometry_msgs.msg import Pose2D, Vector3, Point, Twist
 from collections import deque
 from math import atan2
 from typing import List
 import copy
 
-from math import radians
+from math import radians, sqrt
 from rmcontrol.utils import get_ori
 
 
@@ -21,23 +21,27 @@ curFrmNo = 0
 pi=3.14159265
 no_robots=12
 
+def get_norm(x,y):
+    return sqrt(x**2+y**2)
+
+def distance(x,y):
+    return sqrt((x[0]-y[0])**2+(x[1]-y[1])**2)
+
 class MotionCapture(Node):
     def __init__(self,name):
         super().__init__(name)
+        self.pdq=deque()
         serverIp = '10.1.1.198'
         print ('serverIp is %s' % serverIp)
-        client = PySDKClient()
-
-        ver = client.PySeekerVersion()
-        print('SeekerSDK Sample Client 2.4.0.3142(SeekerSDK ver. %d.%d.%d.%d)' % (ver[0], ver[1], ver[2], ver[3]))
-
-        client.PySetVerbosityLevel(0)
-        client.PySetMessageCallback(self.py_msg_func)
-        client.PySetDataCallback(self.py_data_func, None)
-
-        print("Begin to init the SDK Client")
         ret=1
         while ret:
+            client = PySDKClient()
+            ver = client.PySeekerVersion()
+            print('SeekerSDK Sample Client 2.4.0.3142(SeekerSDK ver. %d.%d.%d.%d)' % (ver[0], ver[1], ver[2], ver[3]))
+            client.PySetVerbosityLevel(0)
+            client.PySetMessageCallback(self.py_msg_func)
+            client.PySetDataCallback(self.py_data_func, None)
+            print("Begin to init the SDK Client")
             ret = client.Initialize(bytes(serverIp, encoding = "utf8"))
 
             if ret == 0:
@@ -52,15 +56,18 @@ class MotionCapture(Node):
         if (ret != 0):
             print("Init ForcePlate Failed[%d]" % ret)
             exit(0)
-
         client.PySetForcePlateCallback(self.py_forcePlate_func, None)
         
         self.mo_pub = self.create_publisher(Motions,"motions", 10)
+        self.stop_pub=self.create_publisher(Mocap, 'mocap',1)
+        self.error_cnt=0
         self.p = []
         self.v = []
         self.tdq=deque()
-        self.pdq=deque()
+        
         self.theta_dq=deque()
+        self.last_ball=Pose2D()
+        self.verbose=False
         print('motion capture initialization finished!!')
         time.sleep(2)
         while True:
@@ -74,6 +81,8 @@ class MotionCapture(Node):
 
 
     def py_data_func(self, pFrameOfMocapData, pUserData):
+        if self.pdq==None:
+            self.pdq=deque()
         if pFrameOfMocapData == None:  
             print("Not get the data frame.\n")
         else:
@@ -85,36 +94,70 @@ class MotionCapture(Node):
 
             preFrmNo = curFrmNo
             n_o=frameData.nOtherMarkers
-            self.p=[]
+            self.temp_p=[0]
             self.v=[]
-            if n_o not in [1,2,3]:
+            p_o=[]
+            if n_o <1:
                 return 
             else:
                 pose_ball=Pose2D(x=frameData.OtherMarkers[0][0]/1000,
-                                 y=frameData.OtherMarkers[0][1]/1000)
-                self.p.append(pose_ball)
-            # else:
-            #     pose_ball=Pose2D(x=frameData.OtherMarkers[0][0]/1000,
-            #                      y=frameData.OtherMarkers[0][1]/1000)
-            #     self.poses.pose.append(pose_ball)
+                                y=frameData.OtherMarkers[0][1]/1000)
+                
+                self.temp_p[0]=pose_ball
+                    # dt=self.tdq[1]-self.tdq[0]
+                    # vmin=100
+                    # for i in range(n_o):
+                    #     pi=[frameData.OtherMarkers[i][0]/1000, frameData.OtherMarkers[i][1]/1000]
+                    #     p_o.append(pi)
+                        
+                    #     dx=self.pdq[0][0].x-pi[0]
+                    #     bvx=dx/dt
+                    #     dy=self.pdq[0][0].y-pi[1]
+                    #     bvy=dy/dt
+                    #     n=get_norm(bvx, bvy)
+                    #     if self.verbose:
+                    #         self.get_logger().warn(f'speed: {bvx, bvy}, dx: {dx}, dt: {dt}')
+                    #     if n<vmin:
+                    #         if self.verbose:
+                    #             self.get_logger().info(f'good ball speed: {bvx, bvy}')
+                    #         vmin=n
+                    #         pose_ball=Pose2D(x=pi[0],y=pi[1])
+                    #         self.temp_p[0]=pose_ball
+                    #         break
+                    #     elif distance(pi, [self.last_ball.x, self.last_ball.y])<0.3:
+                    #         if self.verbose:
+                    #             self.get_logger().info(f'distance: {distance(pi, [self.last_ball.x, self.last_ball.y])}')
+                    #         self.temp_p=Pose2D(x=pi[0],y=pi[1])
+                self.p=self.temp_p.copy()
 
-            for iBody in range(frameData.nRigidBodies):
-                body = frameData.RigidBodies[iBody]
-                self.p.append(Pose2D(x=body.x/1000, y=body.y/1000, theta=get_ori(body.qz, body.qw)))
+            
+                self.stop_pub.publish(Mocap(stop=0))
+                self.verbose=False
+                self.p=self.temp_p.copy()
+                self.last_ball=self.p[0]
 
-            self.tdq.append(time.time())
-            self.pdq.append(copy.deepcopy(self.p))
+                for iBody in range(frameData.nRigidBodies):
+                    body = frameData.RigidBodies[iBody]
+                    self.p.append(Pose2D(x=body.x/1000, y=body.y/1000, theta=get_ori(body.qz, body.qw)))
 
-            if len(self.tdq)>2 and len(self.pdq)>2:
-                self.tdq.popleft()
-                self.pdq.popleft()
-                dt=self.tdq[1]-self.tdq[0]
-                if dt!=0:
-                    for i in range(no_robots+1):
-                        x=(self.pdq[1][i].x-self.pdq[0][i].x)/dt
-                        y=(self.pdq[1][i].y-self.pdq[0][i].y)/dt
-                        z=(self.pdq[1][i].theta-self.pdq[0][i].theta)/dt
-                        self.v.append(Pose2D(x=x/1000, y=y/1000, theta=z))
+                self.tdq.append(time.time())
+                self.pdq.append(copy.deepcopy(self.p))
+
+                if len(self.tdq)>2 and len(self.pdq)>2:
+                    self.tdq.popleft()
+                    self.pdq.popleft()
+                    dt=self.tdq[1]-self.tdq[0]
+                    if dt!=0:
+                        try: 
+                            for i in range(no_robots+1):
+                                
+                                x=(self.pdq[1][i].x-self.pdq[0][i].x)/dt
+                                y=(self.pdq[1][i].y-self.pdq[0][i].y)/dt
+                                z=(self.pdq[1][i].theta-self.pdq[0][i].theta)/dt
+                                self.v.append(Pose2D(x=x/1000, y=y/1000, theta=z))
+                        except Exception as e:
+                            # self.get_logger().error(e)
+                            self.get_logger().info(f'pdq: {len(self.pdq)}')
 
                 
 

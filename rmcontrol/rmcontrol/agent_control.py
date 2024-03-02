@@ -13,12 +13,14 @@ from rclpy.parameter import Parameter
 from .utils import *
 
 # arm_pose: high for move, low for catch
-arm_pose=[MoveArm.Goal(x=0.15, z=0.06), MoveArm.Goal(x=0.18, z=-0.07)] # up and down position
+arm_pose=[MoveArm.Goal(x=0.15, z=0.06), MoveArm.Goal(x=0.18, z=-0.08)] # up and down position
 gripper=[GripperControl.Goal(target_state=1, power=1.), GripperControl.Goal(target_state=2, power=1.)] # open and close
 attacker=0
 team_a=[1,3,5]
 team_b=[4,2,6]
-kick_speed=1.5
+kick_speed_ep=1.4
+kick_speed_s1=1.0
+kick_time=0.7
 # action_gap=0.05
 
 class AgentControl(Node):
@@ -30,6 +32,7 @@ class AgentControl(Node):
 
         self.goal_pub=self.create_publisher(Twist, f'/RM{self.id}/cmd_vel',1)
         self.state_pub=self.create_publisher(State, f'/RM{self.id}/state_id', 2)
+        
         self.arm_sub=self.create_subscription(PointStamped, f'/RM{self.id}/arm_position', self.update_arm, 1)
         self.grip_sub=self.create_subscription(GripperState, f'/RM{self.id}/gripper_state', self.update_grip, 1)
         self.arm_action=ActionClient(self, MoveArm, f'/RM{self.id}/move_arm')
@@ -38,12 +41,14 @@ class AgentControl(Node):
         self.gripper_goal=gripper[0]
         self.grip_state=0
         self.grip_start=0
-        self.gripper_action.send_goal_async(gripper[0]) # open gripper
+        if self.id in [1,2,3]:
+            self.get_logger().info(f'init arm and gripper')
+            self.gripper_action.send_goal_async(gripper[0]) # open gripper
+            self.arm_action.send_goal_async(arm_pose[0]) # init arm pose
         self.release_start=0
         # time.sleep(10)
-                
         self.arm_done=0
-        self.arm_action.send_goal_async(arm_pose[0]) # init arm pose
+        
         # fut.add_done_callback(self.arm_done_cb)
         self.arm_pos=Point()
         self.arm_start=0
@@ -77,19 +82,19 @@ class AgentControl(Node):
     def kick(self):
         global kick_speed
         if self.id in [4,5,6]:
-            kick_speed=0.8
+            kick_speed=kick_speed_s1
         else:
-            kick_speed=1.5 
+            kick_speed=kick_speed_ep 
         self.status=25
         self.sync_status()
         self.get_logger().info(f'RM{self.id} starts to kick')
         # kick
         self.goal_pub.publish(Twist(linear=Vector3(x=kick_speed, y=0.), angular=Vector3(z=0.)))
-        time.sleep(0.5)
+        time.sleep(kick_time)
         # self.stop()
         # get back
         self.goal_pub.publish(Twist(linear=Vector3(x=-kick_speed, y=0.), angular=Vector3(z=0.)))
-        time.sleep(0.5)
+        time.sleep(kick_time)
         self.status=10
         self.sync_status()
         self.get_logger().info(f'RM{self.id} finishes kick')

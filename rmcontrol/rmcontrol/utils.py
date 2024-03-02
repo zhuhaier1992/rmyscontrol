@@ -11,7 +11,7 @@ import sympy as sp
 
 # def get_ori(p1,p2):
 #     return atan2(p1[1]-p2[1], p1[0]-p2[0])*180/pi
-catched=[0.292,0.331]
+catched=[0.270,0.335]
 
 
 def distance(p1, p2):
@@ -79,12 +79,12 @@ def check_catched(ps, pb, vb):
     return d, dphi, (abs(dphi)<0.08 and d in Interval(catched[0],catched[1]+norm(np.array([vb[0], vb[1]]))/30))
     # return dphi, d
 
-def check_catchable(node, ps, pb):
+def check_catchable(ps, pb):
     t=atan2(pb[1]-ps[1], pb[0]-ps[0])
     dt=limit_pi(abs(t-ps[2]))
     d=distance(ps, pb)
-    node.get_logger().info(f'dt: {dt},  d: {d}')
-    if dt<0.3 and catched[0]<d<catched[1]:
+    # node.get_logger().info(f'dt: {dt},  d: {d}')
+    if dt<0.15 and catched[0]<d<catched[1]:
         return True
     else:
         return False
@@ -174,7 +174,7 @@ def trans_relative_co(ps: np.ndarray, pt: np.ndarray):
     return np.array([trans_pt[0],trans_pt[1],theta_d])
 
 
-def reach_time(pa, pb, vb, va_max=0.5):
+def reach_time(pa, pb, vb, va_max=1.2):
     '''
     for agent from position pa with constant speed va to
     reach ball from position pb with constant speed vb, 
@@ -189,8 +189,9 @@ def reach_time(pa, pb, vb, va_max=0.5):
     tmin=1000
     for s in solutions:
         # print(s[0])
-        if s[0]>0 and s[0]<tmin:
-            tmin=s[0]
+        if not isinstance(s[0], complex):
+            if s[0]>0 and s[0]<tmin:
+                tmin=s[0]
     # t=next(iter(solutions))[0]
     p0=pb+vb*tmin
     return tmin, p0

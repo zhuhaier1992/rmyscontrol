@@ -19,14 +19,15 @@ class Rvo(Node):
         self.mo_sub=self.create_subscription(Motions, 'motions', self.update_pv, 10)
         self.ctrl_sub=self.create_subscription(Ctrl, 'to_rvo', self.calc_v, 10)
         self.rvo_pub=self.create_publisher(Ctrl, 'rvo', 10)
-        self.p=np.zeros([no_rm+no_ys+1,3])
+        self.p=np.zeros([no_rm+1,3])
         self.v=np.zeros([no_rm+1,3])
         self.tp=np.zeros([no_rm+1,3])
 
 
     def update_pv(self, msg):
-        if len(msg.poses)>12:
+        if len(msg.poses)==13:
             self.p=pose2d_to_nparray(msg.poses)
+        if len(msg.twists)==13:
             self.v=pose2d_to_nparray(msg.twists)
 
 
@@ -35,11 +36,11 @@ class Rvo(Node):
         c=msg.code
         self.tp=pose2d_to_nparray(msg.pose)
         self.tp=np.vstack([self.tp, self.p[7:13]])
-        v_max = [1.2]*(no_rm+no_ys)
-        ws_model = {'robot_radius': 0.15, 'circular_obstacles': []}
+        v_max = [1.5]*(no_rm)
+        ws_model = {'robot_radius': 0.2, 'circular_obstacles': []}
         # self.get_logger().info(f'p: {self.p[1:no_rm+1]}')
-        v_des = compute_V_des(self.p[1:no_rm+no_ys+1], self.tp[1:no_rm+no_ys+1], v_max)
-        v_best = RVO_update(self.p[1:no_rm+no_ys+1], v_des, self.v[1:no_rm+no_ys+1], ws_model)
+        v_des = compute_V_des(self.p[1:no_rm+1], self.tp[1:no_rm+1], v_max)
+        v_best = RVO_update(self.p[1:no_rm+1], v_des, self.v[1:no_rm+1], ws_model)
         rel_v=np.zeros([no_rm+1,3])
         
         for i in range(1, no_rm+1):
