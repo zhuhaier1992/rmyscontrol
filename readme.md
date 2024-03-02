@@ -1,5 +1,5 @@
 # Readme
-### About
+### Intro
 This repo provides simple control plan over robotic football, each team consists of several Yanshees and RoboMasters (RM). 
 
 Positional feedback comes from motion capture system.
@@ -17,7 +17,7 @@ Run following command on server.
 ros2 run motion_capture motion_capture
 ```
 If it shows 'motion capture initialization finished' then run following commands in new terminals.
-```
+```python
 ros2 run rmcontrol rvo # obastacle avoidance
 ros2 launch rmcontrol ep_startup.launch.py # connect to RM EPs
 ros2 launch rmcontrol s1_startup.launch.py # connect to RM S1s
@@ -36,3 +36,7 @@ To stop RMs, stop strategy node and ep_startup.launch.py and s1_startup.launch.p
 ./rmcontrol: DJI Robomaster EP
 
 ./yscontrol: Yanshee from UBTech 
+### About
+Provided by Haier Zhu from THU SIGS under instruction of Prof. Li, Xiang.
+
+This work was supported in part by the National Natural Science Foundation of China under Grant U21A20517 and 52075290, and in part by the Science and Technology Innovation 2030-Key Project under Grant 2021ZD0201404.
