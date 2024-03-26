@@ -88,7 +88,7 @@ class YsControl(Node):
     def __init__(self, name):
         super().__init__(name)
         self.id=int(self.get_name()[2])
-        self.get_logger().info(f'node started, id: {self.id}')
+        self.get_logger().info(f'ys started, id: {self.id}')
         self.ip = ips[self.id-1]
         self.anchor = anchors[self.id-1]
         self.limits=(0.2,0.2)
@@ -100,7 +100,7 @@ class YsControl(Node):
 
         ###################### communicate with ROS ######################
         # retrieve global pos data as a subscription
-        self.retrieve_pos=self.create_subscription(Motions, 'motions_b', self.get_pos, 10)
+        self.retrieve_pos=self.create_subscription(Motions, 'motions', self.get_pos, 10)
         # SERVER
         self.server=self.create_service(Comm,f'/YS{self.id}/ys_comm',self.yscomm_cb) # 'ys_comm' as the server, replies robomaster's requests
         self.pose = 0
@@ -168,12 +168,13 @@ class YsControl(Node):
             self.kick()
         elif self.distance_to_ball>PREPARE_DIST:
             if abs(x_d)<=0.05 and abs(y_d)<=0.05: # already in anchor
-                if self.id not in [1, 2,5] and random.random()>0.5:
-                    motion_list=['left', 'right']
-                    random_motion=motion_list[round(random.random())]
-                    YanAPI.sync_play_motion('walk', random_motion, speed='fast', repeat=1)
-                else:
-                    time.sleep(1)
+                # if self.id not in [1, 2,5] and random.random()>0.5:
+                #     motion_list=['left', 'right']
+                #     random_motion=motion_list[round(random.random())]
+                #     YanAPI.sync_play_motion('walk', random_motion, speed='fast', repeat=1)
+                # else:
+                #     time.sleep(1)
+                time.sleep(0.1)
             elif self.anchor[2]==0:
                 if abs(x_d)>0.05:
                     self.get_logger().info(f'x d: {x_d}')

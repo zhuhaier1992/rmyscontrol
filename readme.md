@@ -23,7 +23,7 @@ ros2 launch rmcontrol ep_startup.launch.py # connect to RM EPs
 ros2 launch rmcontrol s1_startup.launch.py # connect to RM S1s
 ros2 launch yscontrol ys_control.launch.py # control Yanshees
 ros2 run rmcontrol strategy # start control plans for RMs
-ros2 launch ep_control.launch.py # control RMs
+ros2 launch rmcontrol ep_control.launch.py # control RMs
 ros2 run rmcontrol draw_plot # optional. Show current and expected position of all robots and ball
 ros2 run motion_capture inbetween #optional. If need a second server in local network to cooperate, then run this 'inbetween' node before ethernet connection to transmit positional info.
 ```

@@ -82,23 +82,16 @@ class YansheeParameters(YansheePose):
 class BallEstimator(Node):
     def __init__(self,name='ball_est',verbose=True):
         super(BallEstimator,self).__init__(name)
-
         self.name = name
         self.verbose = verbose
-
         self.x = -0.114
         self.y = -0.514
-
-
         self.vx = 1.14
         self.vy = 0.514
 
         self.timestamp = time.time()
-
         self.last_timestamp = time.time()
-
         self.log = self.get_logger()
-
         # field border coords
         self.upperY = 1.2
         self.lowerY = -1.2

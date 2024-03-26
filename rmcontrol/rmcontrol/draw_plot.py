@@ -19,7 +19,7 @@ class Draw(Node):
         self.name=name
         self.mo_sub=self.create_subscription(Motions, 'motions', self.update_pv, 10)
         self.ctrl_sub=self.create_subscription(Ctrl, 'to_rvo', self.calc_v, 10)
-        self.rvo_pub=self.create_publisher(Ctrl, 'rvo', 10)
+        # self.rvo_pub=self.create_publisher(Ctrl, 'rvo', 10)
         self.p=np.zeros([no_rm+1,3])
         self.v=np.zeros([no_rm+1,3])
         self.tp=np.zeros([no_rm+1,3])
