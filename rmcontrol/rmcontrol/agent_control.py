@@ -226,9 +226,9 @@ def main(args=None):
                 node.status=35
                 node.sync_status()
                 # node.code=36
-        elif node.code==36: # move to position
+        elif node.code in [36, 37]: # move to position
             # node.get_logger().info(f'code=36')
-            if node.status!=36:
+            if node.status not in [36,37]:
                 node.get_logger().info(f'RM{node.id} last step of carrying')
                 node.arm_action.send_goal_async(arm_pose[0])
                 rclpy.spin_once(node)

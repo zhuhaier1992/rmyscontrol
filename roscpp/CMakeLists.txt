@@ -8,8 +8,11 @@ find_package(rclpy REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(ros2_interfaces REQUIRED)
 find_package(geometry_msgs REQUIRED)
+# find_package(Eigen3 REQUIRED)
 
-# include_directories(/usr/local/include)
+# include_directories(${EIGEN3_INCLUDE_DIRS})
+
+include_directories(include/roscpp)
 add_executable(pub_pos src/pub_pos.cpp)
 target_link_libraries(pub_pos libRVO.a)
 ament_target_dependencies(pub_pos rclcpp std_msgs ros2_interfaces geometry_msgs)

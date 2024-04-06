@@ -29,9 +29,9 @@ BOT_BALL_READY = 2
 ip_addr_1= "192.168.3.51"  #6AB8
 ip_addr_2= "192.168.3.56"  #A77D
 ip_addr_3="192.168.3.76"   #DF7D
-ip_addr_4="192.168.3.50"   #E6BD
-ip_addr_5="192.168.3.15"   #A61C
-ip_addr_6="192.168.3.18"   #6280
+ip_addr_4="192.168.3.64"   #E6BD
+ip_addr_5="192.168.3.53"   #A61C
+ip_addr_6="192.168.3.54"   #6280
 ips=[ip_addr_1, ip_addr_2, ip_addr_3, ip_addr_4, ip_addr_5, ip_addr_6]
 
 

@@ -11,27 +11,29 @@ from .utils import *
 import copy
 from math import *
 
+#tp为初始目标位置，依次为: 足球、队伍a的3个站位、b的3个站位
 tp=np.array([[-0.7       ,  0.        ,  0.        ],
-                        [-1.5       , -1.2        ,  0.        ],
-                        [-1.4       ,  0.        ,  0.        ],
-                        [-1.5       ,  1.2        ,  0.        ],
-                        [ 1.5       , -1.2        ,  pi],
-                        [ 1.4       ,  0.        ,  pi],
-                        [ 1.5       ,  1.2        ,  pi]])
+            [-1.5       , -1.2        ,  0.        ],
+            [-1.4       ,  0.        ,  0.        ],
+            [-1.5       ,  1.2        ,  0.        ],
+            [ 1.5       , -1.2        ,  pi],
+            [ 1.4       ,  0.        ,  pi],
+            [ 1.5       ,  1.2        ,  pi]])
 whole_range=[[-3.07,2.7],[-2.26,2.4]]
 safe_range_x=[-2.1, 2.0]
 safe_range_y=[-2.0, 2.1]
 attacker=0
 shooter=0
 target_poses=tp.copy()
-team_a=[1,3,5]
+team_a=[1,3,5] # 队伍a由1 3 5号RM组成
 team_b=[4,2,6]
 team=[team_a, team_b]
-compete_range=[-0.8,0.8]
-switch_range=[-0.9, 0.9]
-left_players=[team_a[0], team_b[0]]
-mid_players=[team_a[1], team_b[1]]
-right_players=[team_a[2], team_b[2]]
+compete_range=[-0.8,0.8] # 球的x位置超出范围则切换team
+switch_range=[-0.9, 0.9] # 球的y位置超出范围则切换同team的不同kicker
+left_players=[team_a[0], team_b[0]] # 左路球员
+mid_players=[team_a[1], team_b[1]] # 中路
+right_players=[team_a[2], team_b[2]] # 右路
+# target_poses类似于tp，只是1~6的排序不是按照队伍，而是RM的编号
 for i in range(len(team_a)):
     target_poses[team_a[i]]=tp[i+1]
 for i in range(len(team_b)):
@@ -71,7 +73,7 @@ class Strategy(Node):
         self.first_reset=1
         self.last_warn_time=time.time()
         self.mo_sub=self.create_subscription(Motions, 'motions', self.mo_cb, 1)
-        self.rvo_sub=self.create_subscription(Ctrl, 'rvo', self.rvo_cb, 1)
+        self.rvo_sub=self.create_subscription(Ctrl, 'rvo2', self.rvo_cb, 1)
         self.status_server=self.create_service(AgentStatus, 'agent_status', self.status_cb)
         self.ctrl_pub=self.create_publisher(Ctrl, 'ctrl', 1)
         self.comm_srv=self.create_service(Comm, 'rm_comm', self.comm_srv_cb)
@@ -79,13 +81,9 @@ class Strategy(Node):
         self.ys_req=Comm.Request()
         self.kickoff=2  
         self.obtime=0
-
         # self.comm_pub=self.create_publisher(Yscomm, 'rm_comm', 1)
         # self.comm_sub=self.create_subscription(Yscomm, 'ys_comm', self.comm_cb, 1)
-        
         self.ys_state=0
-              
-
         self.to_rvo_pub=self.create_publisher(Ctrl, 'to_rvo', 1)
         self.ctrl=Ctrl()
         self.wait_for_ys=False
@@ -129,6 +127,9 @@ class Strategy(Node):
 
     def force_kicker(self):
         def find_y(y, team):
+            '''
+            根据当前球的y坐标（横向位置）和球队，决定kicker
+            '''
             if team=='a':
                 if y>1.2:
                     self.kicker=team_a[2]
@@ -147,6 +148,10 @@ class Strategy(Node):
             find_y(by, 'a')
 
     def switch_kicker(self):
+        '''
+        有时根据find_closest找到的kicker并不合适，可能导致球员越界太多（如左路的跑到右路去了）
+        因此若球的y坐标越界则强制切换球员。
+        '''
         atk=0
         if self.kicker in team_a:
             atk=team_a
@@ -214,6 +219,9 @@ class Strategy(Node):
             self.team_code=[0,0]
 
     def tp_alloc(self):
+        '''
+        分配每队的target pose
+        '''
         for i in team_a:
             self.target_pose[i]=np.array([self.p[0][0] - def_dist + \
                 self.team_code[0]*atk_comp, target_poses[i][1], 
@@ -274,7 +282,7 @@ class Strategy(Node):
                 else: # recatch
                     self.get_logger().info(f'recatch')
                     self.target_code[self.catcher]=30
-        elif self.target_code[self.catcher]==34: # got ball
+        elif self.target_code[self.catcher]==34: # if got ball, then take it to the yanshee kicker
             if to_ys:
                 if self.kickoff==2:
                     self.target_pose[self.catcher]=np.array([self.p_ys[1][0]+0.41, self.p_ys[1][1]-0.03, pi])
@@ -295,11 +303,20 @@ class Strategy(Node):
         
         elif self.target_code[self.catcher]==36: # ball in position
             self.target_pose[self.catcher]=target_poses[self.catcher].copy()
-            if in_position(self.p[self.catcher], target_poses[self.catcher]):
+            # 放下球后先别转身，否则容易撞到球。
+            if target_poses[self.catcher][2]==0:
+                self.target_pose[self.catcher][2]=pi
+            elif target_poses[self.catcher][2]>3:# pi
+                self.target_pose[self.catcher][2]=0
+            # self.get_logger().info(f'catcher: {self.p[self.catcher]}, target: {target_poses[self.catcher]}')
+            if in_position(self.p[self.catcher], self.target_pose[self.catcher]):
+                self.target_code[self.catcher]=37
+        elif self.target_code[self.catcher]==37: # rm in position but has to rotate
+            self.target_pose[self.catcher]=target_poses[self.catcher].copy()
+            if in_position(self.p[self.catcher], self.target_pose[self.catcher]):
                 self.get_logger().info(f'---all in position')
                 self.get_logger().info(f'{self.catcher} code: {self.target_code[self.catcher]}')
                 self.target_code[self.catcher]=39
-                
         elif self.target_code[self.catcher]==39: # all in position
             self.wait_for_ys=True
             self.get_logger().info(f'reset complete, call ys to kick')
@@ -363,11 +380,18 @@ def main(args=None):
                 #         node.game_code='play'
             
         if node.game_code=='play':
+            '''
+            The ball usually goes unblocked to the border, which look bad.
+            To avoid this consequence, when ball is away from the center area
+            (out of compete range), force the defence team to have the kicker.
+            '''
             if node.p[0][0]>compete_range[1] or node.p[0][0]<compete_range[0]:
                 node.force_kicker()
             else:
                 kicker,ts=find_closest(node.p, vkikcer_adjust*node.v[0]) # ball velocity adjust
                 node.kicker=kicker
+            
+            # 强制切换左中右路
             node.switch_kicker()
 
             node.target_code=[10]*no_rms
@@ -389,6 +413,8 @@ def main(args=None):
                 node.target_pose[node.catcher]=tp_catch
 
         node.to_rvo_pub.publish(Ctrl(code=node.target_code, pose=nparray_to_pose2d(node.target_pose)))
+        rclpy.spin_once(node)
+
         i=0
         for p, tp in zip(node.p, node.target_pose):
             if i!=0 and i==node.kicker:
@@ -400,11 +426,11 @@ def main(args=None):
             elif len(node.rvo_res)==0 or distance(p, tp)<0.5: # if close dont use rvo
                 node.rel_cmd[i]=trans_relative_co(p, tp)
                 if i==node.catcher:
-                    node.rel_cmd[i]=np.array([tanh(node.rel_cmd[i][0])/1.2,node.rel_cmd[i][1]/1.5,pi/4*tanh(node.rel_cmd[i][2]/pi*4)])
+                    node.rel_cmd[i]=np.array([tanh(node.rel_cmd[i][0]),node.rel_cmd[i][1],pi/1.5*tanh(node.rel_cmd[i][2]/pi*4)])
             else:
                 node.rel_cmd[i]=node.rvo_res[i]
                 if i==node.catcher:
-                    node.rel_cmd[i]=np.array([tanh(node.rel_cmd[i][0])/1.2,node.rel_cmd[i][1]/1.5,pi/4*tanh(node.rel_cmd[i][2]/pi*4)])
+                    node.rel_cmd[i]=np.array([tanh(node.rel_cmd[i][0]),node.rel_cmd[i][1],pi/1.5*tanh(node.rel_cmd[i][2]/pi*4)])
                     node.rel_cmd[i]=too_slow(node.rel_cmd[i])
             i+=1
         node.command()
