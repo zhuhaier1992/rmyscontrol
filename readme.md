@@ -1,4 +1,5 @@
 # Readme
+中文（详细）说明：https://www.jianshu.com/p/4b9c0f4658b1?v=1713596074817
 ### Intro
 This repo provides simple control plan over robotic football, each team consists of several Yanshees and RoboMasters (RM). 
 
@@ -18,7 +19,8 @@ ros2 run motion_capture motion_capture
 ```
 If it shows 'motion capture initialization finished' then run following commands in new terminals.
 ```python
-ros2 run rmcontrol rvo # obastacle avoidance
+ros2 run motion_capture motion_capture # for positional data
+ros2 run roscpp pub_pos # obastacle avoidance
 ros2 launch rmcontrol ep_startup.launch.py # connect to RM EPs
 ros2 launch rmcontrol s1_startup.launch.py # connect to RM S1s
 ros2 launch yscontrol ys_control.launch.py # control Yanshees
