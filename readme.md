@@ -4,6 +4,9 @@
 This repo provides simple control plan over robotic football, each team consists of several Yanshees and RoboMasters (RM). 
 
 Positional feedback comes from motion capture system.
+### Prerequisites
+Install ros2-galactic.
+Install [robomaster-ros](https://github.com/jeguzzi/robomaster_ros).
 ### Build
 Pack this repo to a folder 'src', and put it in a workspace.
 
