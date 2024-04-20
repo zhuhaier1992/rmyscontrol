@@ -235,11 +235,11 @@ void setupScenario(RVO::RVOSimulator *sim, vector<Pose2D> p)
 	/* Specify the global time step of the simulation. */
 	sim->setTimeStep(0.25f);
 
-	sim->setAgentDefaults(2.0f, 10, 4.0f, 4.0f, 0.25f, 1.0f);
+	sim->setAgentDefaults(5.0f, 10, 4.0f, 4.0f, 0.25f, 1.0f);
 	for (int i =0; i<num_rm;++i){
 		sim->addAgent(RVO::Vector2(p[i+1].x, p[i+1].y));
 	}
-	sim->setAgentDefaults(0.35f, 10, 4.0f, 4.0f, 0.08f, 0.01f);
+	sim->setAgentDefaults(3.0f, 10, 4.0f, 4.0f, 0.12f, 0.01f);
 	for (int i =num_rm; i<num_rm+num_ys;++i){
 		sim->addAgent(RVO::Vector2(p[i+1].x, p[i+1].y));
 	}
@@ -248,35 +248,37 @@ void setupScenario(RVO::RVOSimulator *sim, vector<Pose2D> p)
 	 * Add (polygonal) obstacles, specifying their vertices in counterclockwise
 	 * order.
 	 */
-	// std::vector<RVO::Vector2> obstacle1, obstacle2, obstacle3, obstacle4;
+	std::vector<RVO::Vector2> obstacle1, obstacle2, obstacle3, obstacle4;
+	float xmax=2.62, xmin = -2.72, ymax=2.4, ymin=-2.25, width=0.3;
 
-	// obstacle1.push_back(RVO::Vector2(-10.0f, 40.0f));
-	// obstacle1.push_back(RVO::Vector2(-40.0f, 40.0f));
-	// obstacle1.push_back(RVO::Vector2(-40.0f, 10.0f));
-	// obstacle1.push_back(RVO::Vector2(-10.0f, 10.0f));
 
-	// obstacle2.push_back(RVO::Vector2(10.0f, 40.0f));
-	// obstacle2.push_back(RVO::Vector2(10.0f, 10.0f));
-	// obstacle2.push_back(RVO::Vector2(40.0f, 10.0f));
-	// obstacle2.push_back(RVO::Vector2(40.0f, 40.0f));
+	obstacle1.push_back(RVO::Vector2(xmax, ymin));
+	obstacle1.push_back(RVO::Vector2(xmin, ymin));
+	obstacle1.push_back(RVO::Vector2(xmin, ymin-width));
+	obstacle1.push_back(RVO::Vector2(xmax, ymin-width));
 
-	// obstacle3.push_back(RVO::Vector2(10.0f, -40.0f));
-	// obstacle3.push_back(RVO::Vector2(40.0f, -40.0f));
-	// obstacle3.push_back(RVO::Vector2(40.0f, -10.0f));
-	// obstacle3.push_back(RVO::Vector2(10.0f, -10.0f));
+	obstacle2.push_back(RVO::Vector2(xmax, ymin));
+	obstacle2.push_back(RVO::Vector2(xmax+width, ymin));
+	obstacle2.push_back(RVO::Vector2(xmax+width, ymax));
+	obstacle2.push_back(RVO::Vector2(xmax, ymax));
 
-	// obstacle4.push_back(RVO::Vector2(-10.0f, -40.0f));
-	// obstacle4.push_back(RVO::Vector2(-10.0f, -10.0f));
-	// obstacle4.push_back(RVO::Vector2(-40.0f, -10.0f));
-	// obstacle4.push_back(RVO::Vector2(-40.0f, -40.0f));
+	obstacle3.push_back(RVO::Vector2(xmax, ymax));
+	obstacle3.push_back(RVO::Vector2(xmax, ymax+width));
+	obstacle3.push_back(RVO::Vector2(xmin, ymax+width));
+	obstacle3.push_back(RVO::Vector2(xmin, ymax));
 
-	// sim->addObstacle(obstacle1);
-	// sim->addObstacle(obstacle2);
-	// sim->addObstacle(obstacle3);
-	// sim->addObstacle(obstacle4);
+	obstacle4.push_back(RVO::Vector2(xmin, ymin));
+	obstacle4.push_back(RVO::Vector2(xmin, ymax));
+	obstacle4.push_back(RVO::Vector2(xmin-width, ymax));
+	obstacle4.push_back(RVO::Vector2(xmin-width, ymin));
+
+	sim->addObstacle(obstacle1);
+	sim->addObstacle(obstacle2);
+	sim->addObstacle(obstacle3);
+	sim->addObstacle(obstacle4);
 
 	// /* Process the obstacles so that they are accounted for in the simulation. */
-	// sim->processObstacles();
+	sim->processObstacles();
 }
 
 #if RVO_OUTPUT_TIME_AND_POSITIONS

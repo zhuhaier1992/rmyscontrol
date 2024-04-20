@@ -402,12 +402,12 @@ def main(args=None):
                 # node.get_logger().info(f'kicker {node.kicker} kick...')
                 node.target_code[node.kicker]=20
 
-        if node.catcher!=0:
+        if node.catcher!=0: # 先复制一个，以区分对其他tp的clip
             tp_catch=node.target_pose[node.catcher].copy()
         np.clip(node.target_pose, [safe_range_x[0], safe_range_y[0],-4],
             [safe_range_x[1], safe_range_y[1],4], out=node.target_pose)
         if node.catcher!=0:
-            if node.target_code[node.catcher]<33:
+            if node.target_code[node.catcher]<33: # 追球阶段，对目标位置加上球的速度，加速追上
                 node.target_pose[node.catcher]=node.catch_pose+np.array([1.3*node.v[0][0], 1.5*node.v[0][1], 0])
             else:
                 node.target_pose[node.catcher]=tp_catch
@@ -417,20 +417,22 @@ def main(args=None):
 
         i=0
         for p, tp in zip(node.p, node.target_pose):
-            if i!=0 and i==node.kicker:
+            if i!=0 and i==node.kicker: # 对kicker速度处理
                 node.rel_cmd[i]=trans_relative_co(p, tp + vmove_adjust*node.v[0])
                 vn=np.array([node.rel_cmd[i][0], node.rel_cmd[i][1]])
-                if norm(vn)<vkick_min:
+                if norm(vn)<vkick_min: # kicker不能太慢，容易漏球
                     vnew=vn/norm(vn)*vkick_min
                     node.rel_cmd[i]=np.array([vnew[0], vnew[1], node.rel_cmd[i][2]])
-            elif len(node.rvo_res)==0 or distance(p, tp)<0.5: # if close dont use rvo
+            elif len(node.rvo_res)==0 or distance(p, tp)<0.06: # 距离目标位置很近时不用rvo
                 node.rel_cmd[i]=trans_relative_co(p, tp)
                 if i==node.catcher:
                     node.rel_cmd[i]=np.array([tanh(node.rel_cmd[i][0]),node.rel_cmd[i][1],pi/1.5*tanh(node.rel_cmd[i][2]/pi*4)])
             else:
                 node.rel_cmd[i]=node.rvo_res[i]
-                if i==node.catcher:
-                    node.rel_cmd[i]=np.array([tanh(node.rel_cmd[i][0]),node.rel_cmd[i][1],pi/1.5*tanh(node.rel_cmd[i][2]/pi*4)])
+                if abs(node.rel_cmd[i][2])>pi/8:
+                    node.rel_cmd[i]=np.array([0,0,node.rvo_res[i][2]])
+                elif i==node.catcher:
+                    # node.rel_cmd[i]=np.array([node.rel_cmd[i][0],node.rel_cmd[i][1], node.rel_cmd[i][2]])
                     node.rel_cmd[i]=too_slow(node.rel_cmd[i])
             i+=1
         node.command()

@@ -60,13 +60,19 @@ def main(args=None):
         plt.scatter(node.p[0, 0], node.p[0, 1], c='black', s=400, marker='o')
         plt.scatter(node.p[1:4, 0], node.p[1:4, 1], c='red', s=800, marker='s')
         plt.scatter(node.p[4:7, 0], node.p[4:7, 1], c='blue', s=800, marker='s')
+        plt.scatter(node.p[7:, 0], node.p[7:, 1], c='grey', s=300, marker='s')
         if node.code !=[]:
             # node.get_logger().info(f'code: {node.code}')
             # node.get_logger().info(f'px: {node.p[:7, 0]}')
-            for i in range(node.p.shape[0]):
+            for i in range(no_rm):
                 p=node.p[i]
                 # node.get_logger().info(f'p: {node.p[i]}')
                 plt.annotate('RM'+str(i)+':'+re.sub('\D', '', str(node.code))[2*i:2*(i+1)], 
+                             xy=(p[0], p[1]), xytext=(p[0], p[1]+0.1))
+            for i in range(no_rm, node.p.shape[0]):
+                p=node.p[i]
+                # node.get_logger().info(f'p: {node.p[i]}')
+                plt.annotate('YS'+str(i)+':'+re.sub('\D', '', str(node.code))[2*i:2*(i+1)], 
                              xy=(p[0], p[1]), xytext=(p[0], p[1]+0.1))
             plt.scatter(node.tp[1:7, 0], node.tp[1:7, 1], c='m', s=455, marker='d')
             for i in range(1, node.tp.shape[0]):
