@@ -54,8 +54,6 @@ class Rvo(Node):
             rel_v[i][2]=limit_pi(self.tp[i][2]-self.p[i][2])
             
         self.rvo_pub.publish(Ctrl(code=c, pose=nparray_to_pose2d(rel_v)))
-        
-
 
 
 

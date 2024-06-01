@@ -5,8 +5,17 @@ This repo provides simple control plan over robotic football, each team consists
 
 Positional feedback comes from motion capture system.
 ### Prerequisites
+Ubuntu20.
+
 Install ros2-galactic.
+
 Install [robomaster-ros](https://github.com/jeguzzi/robomaster_ros).
+
+Use system python to install all required modules, conda could cause unexpected problem like "module not found". 
+
+Usually need to install "empy, lark" by pip.
+
+For yanshee control, usually need to install nest-sync*(can't remember) and google protobuf==3.20.0.
 ### Build
 Pack this repo to a folder 'src', and put it in a workspace.
 

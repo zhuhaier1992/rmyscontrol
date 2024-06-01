@@ -29,7 +29,7 @@ team_a=[1,3,5] # 队伍a由1 3 5号RM组成
 team_b=[4,2,6]
 team=[team_a, team_b]
 compete_range=[-0.8,0.8] # 球的x位置超出范围则切换team
-switch_range=[-0.9, 0.9] # 球的y位置超出范围则切换同team的不同kicker
+switch_range=[-0.8, 0.8] # 球的y位置超出范围则切换同team的不同kicker
 left_players=[team_a[0], team_b[0]] # 左路球员
 mid_players=[team_a[1], team_b[1]] # 中路
 right_players=[team_a[2], team_b[2]] # 右路
@@ -73,7 +73,7 @@ class Strategy(Node):
         self.first_reset=1
         self.last_warn_time=time.time()
         self.mo_sub=self.create_subscription(Motions, 'motions', self.mo_cb, 1)
-        self.rvo_sub=self.create_subscription(Ctrl, 'rvo2', self.rvo_cb, 1)
+        self.rvo_sub=self.create_subscription(Ctrl, 'rvo2', self.rvo_cb, 1) # change this topic to "rvo2" to receive cpp rvo2 from "roscpp"
         self.status_server=self.create_service(AgentStatus, 'agent_status', self.status_cb)
         self.ctrl_pub=self.create_publisher(Ctrl, 'ctrl', 1)
         self.comm_srv=self.create_service(Comm, 'rm_comm', self.comm_srv_cb)
@@ -126,19 +126,22 @@ class Strategy(Node):
             self.v=pose2d_to_nparray(mc_msg.twists[:no_rms])
 
     def force_kicker(self):
+        '''
+        当球的x坐标超出范围后，强制某队变成进攻队伍，从而增加来回往复的次数，以免直接出界。
+        '''
         def find_y(y, team):
             '''
             根据当前球的y坐标（横向位置）和球队，决定kicker
             '''
             if team=='a':
-                if y>1.2:
+                if y>switch_range[1]:
                     self.kicker=team_a[2]
-                elif y<-1.2: self.kicker=team_a[0]
+                elif y<switch_range[0]: self.kicker=team_a[0]
                 else: self.kicker=team_a[1]
             else: 
-                if y>1.2:
+                if y>switch_range[1]:
                     self.kicker=team_b[2]
-                elif y<-1.2: self.kicker=team_b[0]
+                elif y<switch_range[0]: self.kicker=team_b[0]
                 else: self.kicker=team_b[1]
         bx=self.p[0][0]
         by=self.p[0][1]
@@ -163,7 +166,7 @@ class Strategy(Node):
             self.kicker=atk[0]
         elif self.kicker not in right_players and by>switch_range[1]:
             self.kicker=atk[2]
-        elif self.kicker not in mid_players and abs(by)<0.3:
+        elif self.kicker not in mid_players and abs(by)<0.8:
             self.kicker=atk[1]
 
     def out_of_boundary(self):
@@ -262,7 +265,7 @@ class Strategy(Node):
         if self.target_code[self.catcher]<=30:  # move to ball
             rclpy.spin_once(self)
             self.catch_pose=calc_catching_pose(self.p[0], self.p[self.catcher], self.v[0])
-            # self.target_pose[self.catcher]=self.catch_pose
+            self.target_pose[self.catcher]=self.catch_pose
             # self.get_logger().info(f'catcher state: {self.agent_status[self.catcher]}')
             # self.get_logger().info(f'dist: {distance(self.p[self.catcher], self.target_pose[self.catcher])}')
             if self.agent_status[self.catcher]==30 and check_catchable(self.p[self.catcher], self.p[0]):
@@ -388,11 +391,12 @@ def main(args=None):
             if node.p[0][0]>compete_range[1] or node.p[0][0]<compete_range[0]:
                 node.force_kicker()
             else:
-                kicker,ts=find_closest(node.p, vkikcer_adjust*node.v[0]) # ball velocity adjust
+                kicker,_=find_closest(node.p, vkikcer_adjust*node.v[0]) # ball velocity adjust
                 node.kicker=kicker
+                node.switch_kicker()
             
             # 强制切换左中右路
-            node.switch_kicker()
+            
 
             node.target_code=[10]*no_rms
             node.team_alloc()
@@ -429,11 +433,11 @@ def main(args=None):
                     node.rel_cmd[i]=np.array([tanh(node.rel_cmd[i][0]),node.rel_cmd[i][1],pi/1.5*tanh(node.rel_cmd[i][2]/pi*4)])
             else:
                 node.rel_cmd[i]=node.rvo_res[i]
-                if abs(node.rel_cmd[i][2])>pi/8:
-                    node.rel_cmd[i]=np.array([0,0,node.rvo_res[i][2]])
-                elif i==node.catcher:
-                    # node.rel_cmd[i]=np.array([node.rel_cmd[i][0],node.rel_cmd[i][1], node.rel_cmd[i][2]])
-                    node.rel_cmd[i]=too_slow(node.rel_cmd[i])
+                # if abs(node.rel_cmd[i][2])>pi/8:
+                #     node.rel_cmd[i]=np.array([0,0,node.rvo_res[i][2]])
+                # elif i==node.catcher:
+                #     # node.rel_cmd[i]=np.array([node.rel_cmd[i][0],node.rel_cmd[i][1], node.rel_cmd[i][2]])
+                #     node.rel_cmd[i]=too_slow(node.rel_cmd[i])
             i+=1
         node.command()
     node.destroy_node()
