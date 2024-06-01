@@ -1,5 +1,3 @@
-import torch
-import torch.nn.functional as F
 from math import *
 import numpy as np
 from numpy.linalg import norm
