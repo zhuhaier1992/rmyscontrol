@@ -11,11 +11,18 @@ Install ros2-galactic.
 
 Install [robomaster-ros](https://github.com/jeguzzi/robomaster_ros).
 
+Install [RVO2 v2.0.2](https://gamma.cs.unc.edu/RVO2/downloads/).
+
 Use system python to install all required modules, conda could cause unexpected problem like "module not found". 
 
+Install [nokov](https://cloud.tsinghua.edu.cn/d/222902bb277b4f09afaa/) by pip.
+
+```
+pip install interval sympy
+```
 Usually need to install "empy, lark" by pip.
 
-For yanshee control, usually need to install nest-sync*(can't remember) and google protobuf==3.20.0.
+For yanshee control, usually need to install nest-asyncio and google protobuf==3.20.0.
 ### Build
 Pack this repo to a folder 'src', and put it in a workspace.
 

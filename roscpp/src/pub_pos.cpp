@@ -1,11 +1,3 @@
-#ifndef RVO_OUTPUT_TIME_AND_POSITIONS
-#define RVO_OUTPUT_TIME_AND_POSITIONS 1
-#endif
-
-#ifndef RVO_SEED_RANDOM_NUMBER_GENERATOR
-#define RVO_SEED_RANDOM_NUMBER_GENERATOR 1
-#endif
-
 #include <cmath>
 #include <cstdlib>
 
@@ -46,7 +38,7 @@ using namespace std;
 using namespace geometry_msgs::msg;
 using std::placeholders::_1;
 using namespace Eigen;
-using namespace Eigen::placeholders;
+// using namespace Eigen::placeholders;
 using namespace ros2_interfaces::msg;
 
 
@@ -126,7 +118,7 @@ Pose2D globalToRelative(RVO::Vector2 gp, Pose2D p, Pose2D goal)
 	Vector2f gpv(gp.x(), gp.y());
 	float t=p.theta;
 	Matrix2f rr;
-	rr<<cos(t), -sin(t), sin(t), cos(t);
+	rr<<cos(t), sin(t), -sin(t), cos(t);
 	Vector3f rp=Vector3f::Zero();
 	rp.head(2)=rr*gpv;
 	rp[2]=limitPi(goal.theta-t);
@@ -146,15 +138,20 @@ vector<Pose2D> getVelocity(RVO::RVOSimulator *sim, vector<Pose2D> p, vector<Pose
 	return pose;
 }
 
+vector<Pose2D> initPoses(int len)
+{
+	return vector<Pose2D>(len, Pose2D());
+}
+
 class Rvo2 : public rclcpp::Node
 {
     public:
         std::string s;
 		Motions motions;
 		Ctrl controls;
-		vector<Pose2D> goals; //length = num_p = 1*ball+num_rm+num_ys
-		vector<Pose2D> p; //same length
-		vector<Pose2D> v;
+		vector<Pose2D> goals=initPoses(num_p); //length = num_p = 1*ball+num_rm+num_ys
+		vector<Pose2D> p=initPoses(num_p); //same length
+		vector<Pose2D> v=initPoses(num_p);
 		rclcpp::Publisher<Ctrl>::SharedPtr publisher_;
         Rvo2() : Node("rvo2"), count_(0), s(""), 
 			// p(MatrixX3f(num_p,3)), v(MatrixX3f(num_p,3)),
@@ -205,33 +202,7 @@ class Rvo2 : public rclcpp::Node
 // std::vector<RVO::Vector2> goals;
 
 void setupScenario(RVO::RVOSimulator *sim, vector<Pose2D> p) 
-	/* Specify the default parameters for agents that are subsequently added. */
-	
-
-	/*
-	 * Add agents, specifying their start position, and store their goals on the
-	 * opposite side of the environment.
-	 */
-	// for (size_t i = 0; i < 5; ++i) {
-	// 	for (size_t j = 0; j < 5; ++j) {
-	// 		sim->addAgent(RVO::Vector2(55.0f + i * 10.0f,  55.0f + j * 10.0f));
-	// 		goals.push_back(RVO::Vector2(-75.0f, -75.0f));
-
-	// 		sim->addAgent(RVO::Vector2(-55.0f - i * 10.0f,  55.0f + j * 10.0f));
-	// 		goals.push_back(RVO::Vector2(75.0f, -75.0f));
-
-	// 		sim->addAgent(RVO::Vector2(55.0f + i * 10.0f, -55.0f - j * 10.0f));
-	// 		goals.push_back(RVO::Vector2(-75.0f, 75.0f));
-
-	// 		sim->addAgent(RVO::Vector2(-55.0f - i * 10.0f, -55.0f - j * 10.0f));
-	// 		goals.push_back(RVO::Vector2(75.0f, 75.0f));
-	// 	}
-	// }p)
 {
-#if RVO_SEED_RANDOM_NUMBER_GENERATOR
-	std::srand(static_cast<unsigned int>(std::time(NULL)));
-#endif
-
 	/* Specify the global time step of the simulation. */
 	sim->setTimeStep(0.25f);
 
@@ -239,7 +210,7 @@ void setupScenario(RVO::RVOSimulator *sim, vector<Pose2D> p)
 	for (int i =0; i<num_rm;++i){
 		sim->addAgent(RVO::Vector2(p[i+1].x, p[i+1].y));
 	}
-	sim->setAgentDefaults(3.0f, 10, 4.0f, 4.0f, 0.12f, 0.01f);
+	sim->setAgentDefaults(3.0f, 10, 4.0f, 4.0f, 0.10f, 0.01f);
 	for (int i =num_rm; i<num_rm+num_ys;++i){
 		sim->addAgent(RVO::Vector2(p[i+1].x, p[i+1].y));
 	}

@@ -39,10 +39,10 @@ ips=[ip_addr_1, ip_addr_2, ip_addr_3, ip_addr_4, ip_addr_5, ip_addr_6]
 MSG_POS_BALL_INDEX = 0
 anchors=np.array([[-2.5, 0, 0],
                   [-2.4, -0.5, 0],
-                  [-2.5, 0.7, 0],
-                  [2.5, -1.3, pi],
+                  [-2.5, 1.0, 0],
+                  [2.5, 0, pi],
                   [2.5, -0.7, pi],
-                  [2.5, 0.5, pi]])
+                  [2.5, 1.0, pi]])
 NUM_ROBOMASTER = 6
 NUM_YANSHEE = 6
 PREPARE_DIST=2
@@ -162,6 +162,8 @@ class YsControl(Node):
         
 
     def move_to_position(self, x, y):
+        if self.id==6:#6号异动，无法理解
+            return
         x_d=x-self.pose.x
         y_d=y-self.pose.y
         if self.kickable():

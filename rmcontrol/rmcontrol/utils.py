@@ -9,7 +9,7 @@ import sympy as sp
 
 # def get_ori(p1,p2):
 #     return atan2(p1[1]-p2[1], p1[0]-p2[0])*180/pi
-catched=[0.270,0.335]
+catched=[0.240,0.305]
 
 
 def distance(p1, p2):
@@ -143,7 +143,7 @@ def nparray_to_relative_pose2d(ps: np.ndarray, pt: np.ndarray):
 def calc_catching_pose(b: np.ndarray, a: np.ndarray, vb):
     '''Calc pose to catch ball. b: ball pose, a: agent pose'''
     x,y=sp.symbols('x, y')
-    distance=0.313 # distance from ball to pose
+    distance=0.283 # distance from ball to pose
     # logging.debug(f'dist:{distance}')
     solutions=sp.nonlinsolve([(x-b[0])*(b[1]-a[1])-(y-b[1])*(b[0]-a[0]),
                               (x-b[0])**2+(y-b[1])**2-distance**2],[x,y])

@@ -18,8 +18,8 @@ gripper=[GripperControl.Goal(target_state=1, power=1.), GripperControl.Goal(targ
 attacker=0
 team_a=[1,3,5]
 team_b=[4,2,6]
-kick_speed_ep=1.4
-kick_speed_s1=1.0
+kick_speed_ep=1.2
+kick_speed_s1=0.9
 kick_time=0.7
 # action_gap=0.05
 

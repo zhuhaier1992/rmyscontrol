@@ -33,33 +33,38 @@ class MotionCapture(Node):
         self.pdq=deque()
         serverIp = '10.1.1.198'
         print ('serverIp is %s' % serverIp)
-        ret=1
-        while ret:
-            client = PySDKClient()
-            ver = client.PySeekerVersion()
-            print('SeekerSDK Sample Client 2.4.0.3142(SeekerSDK ver. %d.%d.%d.%d)' % (ver[0], ver[1], ver[2], ver[3]))
-            client.PySetVerbosityLevel(0)
-            client.PySetMessageCallback(self.py_msg_func)
-            client.PySetDataCallback(self.py_data_func, None)
-            print("Begin to init the SDK Client")
-            ret = client.Initialize(bytes(serverIp, encoding = "utf8"))
 
-            if ret == 0:
-                print("Connect to the Seeker Succeed")
-            else:
-                print("Connect Failed: [%d]" % ret)
-                # exit(0)
-                time.sleep(2)
+        client = PySDKClient()
+        # ver = client.PySeekerVersion()
+        # print('SeekerSDK Sample Client 2.4.0.3142(SeekerSDK ver. %d.%d.%d.%d)' % (ver[0], ver[1], ver[2], ver[3]))
+        client.PySetVerbosityLevel(0)
+        client.PySetMessageCallback(self.py_msg_func)
+        client.PySetDataCallback(self.py_data_func, None)
+        print("Begin to init the SDK Client")
+        ret = client.Initialize(bytes(serverIp, encoding = "utf8"))
 
-        #Give 5 seconds to system to init forceplate device
+        if ret == 0:
+            print("Connect to the Seeker Succeed")
+        else:
+            print("Connect Failed: [%d]" % ret)
+            exit(0)
+
+        serDes = ServerDescription()
+        client.PyGetServerDescription(serDes)
+
+        pdds = POINTER(DataDescriptions)()
+        client.PyGetDataDescriptions(pdds)
+        dataDefs = pdds.contents
+
         ret = client.PyWaitForForcePlateInit(5000)
         if (ret != 0):
             print("Init ForcePlate Failed[%d]" % ret)
             exit(0)
         client.PySetForcePlateCallback(self.py_forcePlate_func, None)
+               
         
         self.mo_pub = self.create_publisher(Motions,"motions", 10)
-        self.stop_pub=self.create_publisher(Mocap, 'mocap',1)
+        # self.stop_pub=self.create_publisher(Mocap, 'mocap',1)
         self.error_cnt=0
         self.p = []
         self.v = []
@@ -98,6 +103,7 @@ class MotionCapture(Node):
             self.v=[]
             p_o=[]
             if n_o <1:
+                print("no ball detected")
                 return 
             else:
                 pose_ball=Pose2D(x=frameData.OtherMarkers[0][0]/1000,
@@ -131,7 +137,7 @@ class MotionCapture(Node):
                 self.p=self.temp_p.copy()
 
             
-                self.stop_pub.publish(Mocap(stop=0))
+                # self.stop_pub.publish(Mocap(stop=0))
                 self.verbose=False
                 self.p=self.temp_p.copy()
                 self.last_ball=self.p[0]
