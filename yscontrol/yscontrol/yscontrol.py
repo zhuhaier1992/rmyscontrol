@@ -131,7 +131,8 @@ class YsControl(Node):
         # self.get_logger().info(f'{self.pose.theta}')
         r_d= limit_pi(d - self.pose.theta)
         if self.kickable():
-            self.kick()
+            if self.id!=6: # 6号会摔
+                self.kick()
         elif self.distance_to_ball>PREPARE_DIST:
             if abs(r_d)>0.15:
                 self.get_logger().info(f'desired: {d}, self: {self.pose.theta}')
@@ -155,7 +156,7 @@ class YsControl(Node):
         pb=pose2d_to_nparray(self.pb)
         vb=pose2d_to_nparray(self.vb)
         p=pose2d_to_nparray(self.pose)
-        if distance(pb, p)-5*norm(vb[:2])<0.2:
+        if distance(pb, p)-5*norm(vb[:2])<0.4:
             return True
         else:
             return False
@@ -229,7 +230,16 @@ class YsControl(Node):
         YanAPI.stop_play_motion()
         # time.sleep(1)
     
-
+    def wave(self):
+        pb=pose2d_to_nparray(self.pb)
+        p=pose2d_to_nparray(self.pose)
+        if distance(pb, p)<1.3:
+            YanAPI.sync_play_motion(name='GoalKeeper1')
+            YanAPI.stop_play_motion()
+    
+    def stop():
+        YanAPI.stop_play_motion()
+    
     
 def main(args=None):
     rclpy.init(args=args)
@@ -243,7 +253,9 @@ def main(args=None):
         elif bot.receive == BOT_APPROACHING: #1
             bot.move_to_specific_direction(bot.anchor[2])
             bot.move_to_position(bot.anchor[0], bot.anchor[1])
+            bot.wave()
         elif bot.receive==BOT_STANDBY: #0
+            bot.stop()
             time.sleep(0.1)
         else:
             bot.get_logger().warn('main loop: bot.receive is not any of 0,1,2')

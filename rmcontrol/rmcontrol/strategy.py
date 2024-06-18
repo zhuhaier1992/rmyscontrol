@@ -79,8 +79,9 @@ class Strategy(Node):
         self.comm_srv=self.create_service(Comm, 'rm_comm', self.comm_srv_cb)
         self.ys_client=self.create_client(Comm, 'ys_comm')
         self.ys_req=Comm.Request()
-        self.kickoff=2  
-        self.obtime=0
+        self.kickoff=2
+        self.ob=False # out of boundary  
+        self.obtime=0 # time of stepping out of boundary
         # self.comm_pub=self.create_publisher(Yscomm, 'rm_comm', 1)
         # self.comm_sub=self.create_subscription(Yscomm, 'ys_comm', self.comm_cb, 1)
         self.ys_state=0
@@ -288,9 +289,9 @@ class Strategy(Node):
         elif self.target_code[self.catcher]==34: # if got ball, then take it to the yanshee kicker
             if to_ys:
                 if self.kickoff==2:
-                    self.target_pose[self.catcher]=np.array([self.p_ys[1][0]+0.41, self.p_ys[1][1]-0.03, pi])
+                    self.target_pose[self.catcher]=np.array([self.p_ys[1][0]+0.39, self.p_ys[1][1]-0.03, pi])
                 elif self.kickoff==5:
-                    self.target_pose[self.catcher]=np.array([self.p_ys[4][0]-0.41, self.p_ys[4][1]+0.04, 0])
+                    self.target_pose[self.catcher]=np.array([self.p_ys[4][0]-0.39, self.p_ys[4][1]+0.04, 0])
             else:
                 self.target_pose[self.catcher]=target_poses[0].copy()
             # self.get_logger().info(f'check if RM{self.catcher} catched {distance(self.p[self.catcher], self.target_pose[self.catcher])}')
@@ -327,6 +328,7 @@ class Strategy(Node):
             self.call_yscomm(self.kickoff, 2)
             self.ys_state=0
             while self.ys_state==0:
+                self.target_code=[0]*no_rms
                 rclpy.spin_once(self)
                 time.sleep(0.1)
             self.call_yscomm('all', 1)
@@ -351,14 +353,17 @@ def main(args=None):
         else:
             oob=node.out_of_boundary()
             if oob: 
-                node.obtime+=1
-                if node.obtime%200==0:
-                    node.get_logger().info(f'oob count: {node.obtime}')
-
-                if node.obtime>1000:
-                    node.obtime=0
-                    node.get_logger().info(f'ball out of boundary, reset')
-                    node.game_code='reset'
+                node.ob=True
+                if node.obtime==0:
+                    node.obtime=time.time()
+                else:
+                    ob_time=time.time()-node.obtime
+                    if ob_time%1<0.0001: # print every 1 second
+                        node.get_logger().info(f'ob time: {ob_time}s')
+                    if ob_time>3.2:
+                        node.obtime=0
+                        node.get_logger().info(f'ball out of boundary, reset')
+                        node.game_code='reset'
             else:
                 node.obtime=0
                 # out_side=node.out_side()
