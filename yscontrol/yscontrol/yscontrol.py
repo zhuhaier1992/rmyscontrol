@@ -37,7 +37,7 @@ ips=[ip_addr_1, ip_addr_2, ip_addr_3, ip_addr_4, ip_addr_5, ip_addr_6]
 
 ################# position message format #####
 MSG_POS_BALL_INDEX = 0
-anchors=np.array([[-2.5, 0, 0],
+anchors=np.array([[-2.5, 0.2, 0],
                   [-2.4, -0.5, 0],
                   [-2.5, 1.0, 0],
                   [2.5, 0, pi],

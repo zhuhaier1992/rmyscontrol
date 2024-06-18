@@ -17,12 +17,18 @@ Use system python to install all required modules, conda could cause unexpected 
 
 Install [nokov](https://cloud.tsinghua.edu.cn/d/222902bb277b4f09afaa/) by pip.
 
+Install other python modules:
+
 ```
 pip install interval sympy
 ```
-Usually need to install "empy, lark" by pip.
+Could need to install "empy, lark" by pip too.
 
 For yanshee control, usually need to install nest-asyncio and google protobuf==3.20.0.
+
+For yanshee API, check [this website](https://yandev.ubtrobot.com/#/zh/api?api=YanAPI).
+
+For robomaster API, check [this website](https://robomaster-dev.readthedocs.io/zh-cn/latest/). Better way is to check the [examples](https://github.com/dji-sdk/RoboMaster-SDK/tree/master/examples)
 ### Build
 Pack this repo to a folder 'src', and put it in a workspace.
 
