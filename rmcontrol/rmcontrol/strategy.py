@@ -238,6 +238,7 @@ class Strategy(Node):
     def reset(self):
         if self.first_reset:
             self.get_catcher()
+            print(f'begin to reset. get catcher: {self.catcher}')
             self.kicker=0
             self.target_code=[10]*7
             self.target_code[self.catcher]=30
@@ -328,13 +329,13 @@ class Strategy(Node):
             self.call_yscomm(self.kickoff, 2)
             self.ys_state=0
             while self.ys_state==0:
-                self.target_code=[0]*no_rms
+                self.target_code=[10]*no_rms
                 rclpy.spin_once(self)
                 time.sleep(0.1)
             self.call_yscomm('all', 1)
             # time.sleep(1)
             self.game_code='play' # play
-            self.target_code=[10]*no_rms
+            # self.target_code=[10]*no_rms
             self.first_reset=1
             self.obtime=0
     
@@ -358,7 +359,7 @@ def main(args=None):
                     node.obtime=time.time()
                 else:
                     ob_time=time.time()-node.obtime
-                    if ob_time%1<0.0001: # print every 1 second
+                    if ob_time%1<0.01: # print every 1 second
                         node.get_logger().info(f'ob time: {ob_time}s')
                     if ob_time>3.2:
                         node.obtime=0

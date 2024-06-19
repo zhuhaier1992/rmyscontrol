@@ -37,9 +37,9 @@ ips=[ip_addr_1, ip_addr_2, ip_addr_3, ip_addr_4, ip_addr_5, ip_addr_6]
 
 ################# position message format #####
 MSG_POS_BALL_INDEX = 0
-anchors=np.array([[-2.5, 0.2, 0],
-                  [-2.4, -0.5, 0],
-                  [-2.5, 1.0, 0],
+anchors=np.array([[-2.6, 0.1, 0],
+                  [-2.64, -0.9, 0],
+                  [-2.6, 1.0, 0],
                   [2.5, 0, pi],
                   [2.5, -0.7, pi],
                   [2.5, 1.0, pi]])
@@ -96,7 +96,7 @@ class YsControl(Node):
         self.pb=Pose2D()
         self.vb=Pose2D()
         self.distance_to_ball=10
-        self.receive = BOT_APPROACHING
+        self.receive = BOT_STANDBY
 
         ###################### communicate with ROS ######################
         # retrieve global pos data as a subscription
@@ -237,7 +237,7 @@ class YsControl(Node):
             YanAPI.sync_play_motion(name='GoalKeeper1')
             YanAPI.stop_play_motion()
     
-    def stop():
+    def stop(self):
         YanAPI.stop_play_motion()
     
     

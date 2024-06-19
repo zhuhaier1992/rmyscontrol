@@ -26,7 +26,11 @@ Could need to install "empy, lark" by pip too.
 
 For yanshee control, usually need to install nest-asyncio and google protobuf==3.20.0.
 
-For yanshee API, check [this website](https://yandev.ubtrobot.com/#/zh/api?api=YanAPI).
+```
+pip install nest-asyncio protobuf==3.20.0
+```
+
+For yanshee API, refer to [this website](https://yandev.ubtrobot.com/#/zh/api?api=YanAPI).
 
 For robomaster API, check [this website](https://robomaster-dev.readthedocs.io/zh-cn/latest/). Better way is to check the [examples](https://github.com/dji-sdk/RoboMaster-SDK/tree/master/examples)
 ### Build
@@ -34,7 +38,7 @@ Pack this repo to a folder 'src', and put it in a workspace.
 
 In workspace, run ```colcon build```.
 ### Usage
-Start XINGYING (Nokov mocap software), check 'SDK' in setting and start running.
+Start XINGYING (Nokov mocap software), check 'SDK' in settings and start running.
 
 If XINGYING starts on another PC, then connect server to the switch of mocap by ethernet cable.(Important note: must be connected AFTER XINGYING is started.)
 
@@ -42,9 +46,8 @@ Run following command on server.
 ```
 ros2 run motion_capture motion_capture
 ```
-If it shows 'motion capture initialization finished' then run following commands in new terminals.
+If it shows 'motion capture initialization finished!!' then run following commands in new terminals.
 ```python
-ros2 run motion_capture motion_capture # for positional data
 ros2 run roscpp pub_pos # obastacle avoidance
 ros2 launch rmcontrol ep_startup.launch.py # connect to RM EPs
 ros2 launch rmcontrol s1_startup.launch.py # connect to RM S1s
@@ -60,9 +63,9 @@ To stop RMs, stop strategy node and ep_startup.launch.py and s1_startup.launch.p
 ### Hardware
 ./motion_capture: Nokov motion capture system
 
-./rmcontrol: DJI Robomaster EP
+./rmcontrol: DJI Robomaster EP/S1
 
-./yscontrol: Yanshee from UBTech 
+./yscontrol: Yanshee from UBTech (Always fall over. Recalibration works badly.)
 ### About
 Provided by Haier Zhu from THU SIGS under instruction of Prof. Li, Xiang.
 
