@@ -18,7 +18,6 @@ if(BUILD_TESTING)
     "msg/State.msg"
     "msg/Yscomm.msg"
     "msg/Mocap.msg"
-    "msg/YsCtrl.msg"
     "srv/AgentStatus.srv"
     "srv/Comm.srv"
     DEPENDENCIES geometry_msgs

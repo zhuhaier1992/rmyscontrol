@@ -1,1 +1,1 @@
-int8 comm
+int8[] comm

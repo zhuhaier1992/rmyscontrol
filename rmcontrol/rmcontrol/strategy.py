@@ -76,31 +76,34 @@ class Strategy(Node):
         self.rvo_sub=self.create_subscription(Ctrl, 'rvo2', self.rvo_cb, 1) # change this topic to "rvo2" to receive cpp rvo2 from "roscpp"
         self.status_server=self.create_service(AgentStatus, 'agent_status', self.status_cb)
         self.ctrl_pub=self.create_publisher(Ctrl, 'ctrl', 1)
-        self.comm_srv=self.create_service(Comm, 'rm_comm', self.comm_srv_cb)
-        self.ys_client=self.create_client(Comm, 'ys_comm')
+        # self.comm_srv=self.create_service(Comm, 'rm_comm', self.comm_srv_cb)
+        # self.ys_client=self.create_client(Comm, 'ys_comm')
+        
+        self.ys_pub=self.create_publisher(Yscomm, 'yscomm', 1)
+        self.comm=[0]*6
         self.ys_req=Comm.Request()
         self.kickoff=2
         self.ob=False # out of boundary  
         self.obtime=0 # time of stepping out of boundary
         # self.comm_pub=self.create_publisher(Yscomm, 'rm_comm', 1)
         # self.comm_sub=self.create_subscription(Yscomm, 'ys_comm', self.comm_cb, 1)
-        self.ys_state=0
+        # self.ys_state=0
         self.to_rvo_pub=self.create_publisher(Ctrl, 'to_rvo', 1)
         self.ctrl=Ctrl()
         self.wait_for_ys=False
         self.change_time=time.time()
 
 
-    def comm_srv_cb(self, req, resp):
-        self.get_logger().info(f'rm_comm got: {req.comm}')
-        self.ys_state=req.comm
-        if req.comm==0:
-            self.wait_for_ys=True
-        elif req.comm>=1:
-            self.wait_for_ys=False
+    # def comm_srv_cb(self, req, resp):
+    #     self.get_logger().info(f'rm_comm got: {req.comm}')
+    #     self.ys_state=req.comm
+    #     if req.comm==0:
+    #         self.wait_for_ys=True
+    #     elif req.comm>=1:
+    #         self.wait_for_ys=False
 
-        resp.res=1
-        return resp
+    #     resp.res=1
+    #     return resp
         
 
     def rvo_cb(self, msg):
@@ -244,23 +247,29 @@ class Strategy(Node):
             self.target_code[self.catcher]=30
             self.target_pose=target_poses.copy()
             self.first_reset=0
-            self.call_yscomm('all', 0)
+            self.pub_yscomm('all', 0)
             self.get_logger().info(f'call ys to stop. RM{self.catcher} starts to catch')
         self.catch_ball(True)
 
 
-    def call_yscomm(self, id, c):
+    # def call_yscomm(self, id, c):
+    #     if id=='all':
+    #         for i in range(1, 7):
+    #             self.ys_client=self.create_client(Comm, f'/YS{i}/ys_comm')
+    #             self.ys_req=Comm.Request()  
+    #             self.ys_req.comm=c
+    #             self.ys_client.call_async(self.ys_req)
+    #     else:
+    #         self.ys_client=self.create_client(Comm, f'/YS{id}/ys_comm')
+    #         self.ys_req=Comm.Request()  
+    #         self.ys_req.comm=c
+    #         self.ys_client.call_async(self.ys_req)
+    def pub_yscomm(self, id, c):
         if id=='all':
-            for i in range(1, 7):
-                self.ys_client=self.create_client(Comm, f'/YS{i}/ys_comm')
-                self.ys_req=Comm.Request()  
-                self.ys_req.comm=c
-                self.ys_client.call_async(self.ys_req)
+            self.comm=[c]*6
         else:
-            self.ys_client=self.create_client(Comm, f'/YS{id}/ys_comm')
-            self.ys_req=Comm.Request()  
-            self.ys_req.comm=c
-            self.ys_client.call_async(self.ys_req)
+            self.comm[id-1]=c
+        self.ys_pub.publish(Yscomm(comm=self.comm))
 
 
     def catch_ball(self, to_ys=False):
@@ -326,13 +335,14 @@ class Strategy(Node):
             self.wait_for_ys=True
             self.get_logger().info(f'reset complete, call ys to kick')
             self.catcher=0
-            self.call_yscomm(self.kickoff, 2)
-            self.ys_state=0
-            while self.ys_state==0:
+            self.pub_yscomm(self.kickoff, 2)
+            count=0
+            while count<60:
+                count+=1
                 self.target_code=[10]*no_rms
                 rclpy.spin_once(self)
-                time.sleep(0.1)
-            self.call_yscomm('all', 1)
+                time.sleep(0.05)
+            self.pub_yscomm('all', 1)
             # time.sleep(1)
             self.game_code='play' # play
             # self.target_code=[10]*no_rms
@@ -359,7 +369,7 @@ def main(args=None):
                     node.obtime=time.time()
                 else:
                     ob_time=time.time()-node.obtime
-                    if ob_time%1<0.01: # print every 1 second
+                    if ob_time%1<0.002: # print every 1 second
                         node.get_logger().info(f'ob time: {ob_time}s')
                     if ob_time>3.2:
                         node.obtime=0

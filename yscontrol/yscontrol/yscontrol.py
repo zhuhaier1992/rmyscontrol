@@ -17,7 +17,7 @@ from geometry_msgs.msg import Twist, Vector3, Pose2D
 # customized Message types
 from ros2_interfaces.msg import Motions
 from ros2_interfaces.msg import Yscomm
-from ros2_interfaces.srv import Comm
+# from ros2_interfaces.srv import Comm
 
 
 
@@ -37,15 +37,18 @@ ips=[ip_addr_1, ip_addr_2, ip_addr_3, ip_addr_4, ip_addr_5, ip_addr_6]
 
 ################# position message format #####
 MSG_POS_BALL_INDEX = 0
-anchors=np.array([[-2.6, 0.1, 0],
-                  [-2.64, -0.9, 0],
+anchors=np.array([[-2.6, 0.0, 0],
+                  [-2.72, -0.9, 0],
                   [-2.6, 1.0, 0],
                   [2.5, 0, pi],
                   [2.5, -0.7, pi],
                   [2.5, 1.0, pi]])
 NUM_ROBOMASTER = 6
 NUM_YANSHEE = 6
-PREPARE_DIST=2
+PREPARE_DIST=2 # gaming中，球在2m内时，停止移动，准备踢球
+OFF_DIST=0.05 # X轴偏差>该值时，校准位置(纵向移动易摔，尽量避免)
+OFF_DIST_Y=0.02 # Y轴偏差>该值时，校准位置
+OFF_RAD=0.15 #角度校准阈值
 MSG_POS_LEN = NUM_ROBOMASTER + NUM_YANSHEE + 1 # 13
 MSG_POS_ROBOMASTERS = [x+1 for x in range(NUM_ROBOMASTER)] # [1,2,3,4,5,6]
 MSG_POS_YANSHEES = [y+1+NUM_ROBOMASTER for y in range(NUM_YANSHEE)] #[7,8,9,10,11,12]
@@ -97,17 +100,20 @@ class YsControl(Node):
         self.vb=Pose2D()
         self.distance_to_ball=10
         self.receive = BOT_STANDBY
+        self.in_right_direction=False
+        self.in_right_pos=False
 
         ###################### communicate with ROS ######################
         # retrieve global pos data as a subscription
         self.retrieve_pos=self.create_subscription(Motions, 'motions', self.get_pos, 10)
         # SERVER
-        self.server=self.create_service(Comm,f'/YS{self.id}/ys_comm',self.yscomm_cb) # 'ys_comm' as the server, replies robomaster's requests
+        # self.server=self.create_service(Comm,f'/YS{self.id}/ys_comm',self.yscomm_cb) # 'ys_comm' as the server, replies robomaster's requests
         self.pose = 0
         # CLIENT
-        self.client = self.create_client(Comm,'rm_comm') # 'rm_comm' as the client, send requests to 'rm_comm' via rclpy.spin_once(self.tick())
-        self.req = Comm.Request() # a message class, as an instance of class 'Comm'
-        self.req.comm = 0 # state the 'Comm' class instance's attribute '.comm' to 0, stands for 'it has stopped movement and is requiring robomaster to move'
+        # self.client = self.create_client(Comm,'rm_comm') # 'rm_comm' as the client, send requests to 'rm_comm' via rclpy.spin_once(self.tick())
+        # self.req = Comm.Request() # a message class, as an instance of class 'Comm'
+        # self.req.comm = 0 # state the 'Comm' class instance's attribute '.comm' to 0, stands for 'it has stopped movement and is requiring robomaster to move'
+        self.create_subscription(Yscomm, 'yscomm', self.yscomm_cb, 5)
         YanAPI.yan_api_init(self.ip)
 
     # position
@@ -134,22 +140,25 @@ class YsControl(Node):
             if self.id!=6: # 6号会摔
                 self.kick()
         elif self.distance_to_ball>PREPARE_DIST:
-            if abs(r_d)>0.15:
+            self.in_right_direction=False
+            if abs(r_d)>OFF_RAD:
                 self.get_logger().info(f'desired: {d}, self: {self.pose.theta}')
             if r_d>0.35:
                 YanAPI.sync_play_motion('OneStepTurnLeft', speed='very fast', repeat=1)
                 self.get_logger().info(f'turning left, dtheta: {r_d}')
-            elif r_d>0.15:
+            elif r_d>OFF_RAD:
                 YanAPI.sync_play_motion('TurnL_tiny', speed='very fast', repeat=1)
                 self.get_logger().info(f'turning left tiny, dtheta: {r_d}')
             elif r_d<-0.35:
                 YanAPI.sync_play_motion('OneStepTurnRight', speed='very fast', repeat=1)
                 self.get_logger().info(f'turning right tiny, dtheta: {r_d}')
-            elif r_d<-0.15:
+            elif r_d<-OFF_RAD:
                 YanAPI.sync_play_motion('TurnR_tiny', speed='very fast', repeat=1)
                 self.get_logger().info(f'turning right tiny, dtheta: {r_d}')
             YanAPI.stop_play_motion()
             time.sleep(1)
+        else:
+            self.in_right_direction=True
         rclpy.spin_once(self)
 
     def kickable(self):
@@ -170,41 +179,38 @@ class YsControl(Node):
         if self.kickable():
             self.kick()
         elif self.distance_to_ball>PREPARE_DIST:
-            if abs(x_d)<=0.05 and abs(y_d)<=0.05: # already in anchor
-                # if self.id not in [1, 2,5] and random.random()>0.5:
-                #     motion_list=['left', 'right']
-                #     random_motion=motion_list[round(random.random())]
-                #     YanAPI.sync_play_motion('walk', random_motion, speed='fast', repeat=1)
-                # else:
-                #     time.sleep(1)
+            if abs(x_d)<=OFF_DIST and abs(y_d)<=OFF_DIST: # already in anchor
+                self.in_right_pos=True
                 time.sleep(0.1)
             elif self.anchor[2]==0:
-                if abs(x_d)>0.05:
+                self.in_right_pos=False
+                if abs(x_d)>OFF_DIST:
                     self.get_logger().info(f'x d: {x_d}')
-                if x_d<-0.05:
+                if x_d<-OFF_DIST:
                     YanAPI.sync_play_motion('walk', 'backward', speed='fast', repeat=1)
-                elif x_d>0.05:
+                elif x_d>OFF_DIST:
                     YanAPI.sync_play_motion('walk', 'forward', speed='fast', repeat=1)
                 
-                if abs(y_d)>0.05:
+                if abs(y_d)>OFF_DIST_Y:
                     self.get_logger().info(f'y d: {y_d}')
-                if y_d<-0.05:
+                if y_d<-OFF_DIST_Y:
                     YanAPI.sync_play_motion('walk', 'right', speed='fast', repeat=1)
-                elif y_d>0.05:
+                elif y_d>OFF_DIST_Y:
                     YanAPI.sync_play_motion('walk', 'left', speed='fast', repeat=1)
             else:
-                if abs(x_d)>0.05:
+                self.in_right_pos=False
+                if abs(x_d)>OFF_DIST:
                     self.get_logger().info(f'right side: x d: {x_d}')
-                if x_d<-0.05:
+                if x_d<-OFF_DIST:
                     YanAPI.sync_play_motion('walk', 'forward', speed='fast', repeat=1)
-                elif x_d>0.05:
+                elif x_d>OFF_DIST:
                     YanAPI.sync_play_motion('walk', 'backward', speed='fast', repeat=1)
                 
-                if abs(y_d)>0.05:
+                if abs(y_d)>OFF_DIST_Y:
                     self.get_logger().info(f'y d: {y_d}')
-                if y_d<-0.05:
+                if y_d<-OFF_DIST_Y:
                     YanAPI.sync_play_motion('walk', 'left', speed='fast', repeat=1)
-                elif y_d>0.05:
+                elif y_d>OFF_DIST_Y:
                     YanAPI.sync_play_motion('walk', 'right', speed='fast', repeat=1)
             
         YanAPI.stop_play_motion()
@@ -212,16 +218,17 @@ class YsControl(Node):
         rclpy.spin_once(self)
 
 
-    def yscomm_cb(self, request, response): 
-        self.get_logger().info(f'get {request.comm} from rm')
-        self.receive = request.comm
-        response.res=1
-        return response
+    def yscomm_cb(self, msg): 
+        self.get_logger().info(f'get {msg.comm[self.id-1]} from rm')
+        # self.receive = request.comm
+        # response.res=1
+        # return response
+        self.receive=msg.comm[self.id-1]
 
 
-    def send_kick(self, comm):
-        self.req.comm = comm
-        self.client.call_async(self.req)
+    # def send_kick(self, comm):
+    #     self.req.comm = comm
+    #     self.client.call_async(self.req)
 
 
     def kick(self): # pure kick
@@ -233,9 +240,10 @@ class YsControl(Node):
     def wave(self):
         pb=pose2d_to_nparray(self.pb)
         p=pose2d_to_nparray(self.pose)
-        if distance(pb, p)<1.3:
-            YanAPI.sync_play_motion(name='GoalKeeper1')
-            YanAPI.stop_play_motion()
+        if self.id not in [2,5]:#踢球者不动
+            if distance(pb, p)<1.3:
+                YanAPI.sync_play_motion(name='GoalKeeper1')
+                YanAPI.stop_play_motion()
     
     def stop(self):
         YanAPI.stop_play_motion()
@@ -248,12 +256,13 @@ def main(args=None):
         rclpy.spin_once(bot) # update pos
         if bot.receive == BOT_BALL_READY: #2
             bot.kick() # very short
-            bot.send_kick(1)
+            # bot.send_kick(1)
             bot.receive=1
         elif bot.receive == BOT_APPROACHING: #1
             bot.move_to_specific_direction(bot.anchor[2])
             bot.move_to_position(bot.anchor[0], bot.anchor[1])
-            bot.wave()
+            if bot.in_right_pos and bot.in_right_direction:
+                bot.wave()
         elif bot.receive==BOT_STANDBY: #0
             bot.stop()
             time.sleep(0.1)

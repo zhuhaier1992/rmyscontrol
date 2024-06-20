@@ -220,7 +220,7 @@ void setupScenario(RVO::RVOSimulator *sim, vector<Pose2D> p)
 	 * order.
 	 */
 	std::vector<RVO::Vector2> obstacle1, obstacle2, obstacle3, obstacle4;
-	float xmax=2.62, xmin = -2.72, ymax=2.4, ymin=-2.25, width=0.3;
+	float xmax=2.75, xmin = -2.82, ymax=2.4, ymin=-2.25, width=0.3;
 
 
 	obstacle1.push_back(RVO::Vector2(xmax, ymin));
