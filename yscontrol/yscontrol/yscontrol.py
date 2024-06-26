@@ -18,6 +18,7 @@ from geometry_msgs.msg import Twist, Vector3, Pose2D
 from ros2_interfaces.msg import Motions
 from ros2_interfaces.msg import Yscomm
 # from ros2_interfaces.srv import Comm
+from .inference import inf
 
 
 
@@ -234,6 +235,7 @@ class YsControl(Node):
     def kick(self): # pure kick
         YanAPI.yan_api_init(self.ip)
         YanAPI.sync_play_motion(name='Football_RShoot',speed='normal',repeat=1)
+        # YanAPI.sync_play_motion('TurnL_tiny', speed='very fast', repeat=1)
         YanAPI.stop_play_motion()
         # time.sleep(1)
     
@@ -244,6 +246,11 @@ class YsControl(Node):
             if distance(pb, p)<1.3:
                 YanAPI.sync_play_motion(name='GoalKeeper1')
                 YanAPI.stop_play_motion()
+            # action=inf(np.hstack((p,pb)).tolist())
+            # if action:
+            #     YanAPI.sync_play_motion(name='GoalKeeper1')
+            #     YanAPI.stop_play_motion()
+            # else:
     
     def stop(self):
         YanAPI.stop_play_motion()

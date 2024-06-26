@@ -13,7 +13,7 @@ from math import *
 
 #tp为初始目标位置，依次为: 足球、队伍a的3个站位、b的3个站位
 tp=np.array([[-0.7       ,  0.        ,  0.        ],
-            [-1.5       , -1.2        ,  0.        ],
+            [-1.5       , -1.4        ,  0.        ],
             [-1.4       ,  0.        ,  0.        ],
             [-1.5       ,  1.2        ,  0.        ],
             [ 1.5       , -1.2        ,  pi],
@@ -337,7 +337,7 @@ class Strategy(Node):
             self.catcher=0
             self.pub_yscomm(self.kickoff, 2)
             count=0
-            while count<60:
+            while count<80:
                 count+=1
                 self.target_code=[10]*no_rms
                 rclpy.spin_once(self)

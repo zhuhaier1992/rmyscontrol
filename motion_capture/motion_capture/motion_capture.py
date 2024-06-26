@@ -20,6 +20,11 @@ preFrmNo=0
 curFrmNo = 0
 pi=3.14159265
 no_robots=12
+xmax=2.75
+xmin = -2.82
+ymax=2.4
+ymin=-2.25
+
 
 def get_norm(x,y):
     return sqrt(x**2+y**2)
@@ -106,8 +111,12 @@ class MotionCapture(Node):
                 print("no ball detected")
                 return 
             else:
-                pose_ball=Pose2D(x=frameData.OtherMarkers[0][0]/1000,
-                                y=frameData.OtherMarkers[0][1]/1000)
+                pose_ball=Pose2D()
+                for i in range(n_o):
+                    xb=frameData.OtherMarkers[i][0]/1000
+                    yb=frameData.OtherMarkers[i][1]/1000
+                    if xb>xmin and xb<xmax and yb>ymin and yb<ymax:
+                        pose_ball=Pose2D(x=xb, y=yb)
                 
                 self.temp_p[0]=pose_ball
                     # dt=self.tdq[1]-self.tdq[0]
